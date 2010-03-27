@@ -10,7 +10,6 @@ Simple application examples
 
 import subssh
 
-
 @subssh.expose_as("hello")
 def hello(user, name):
     """
