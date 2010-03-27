@@ -1,31 +1,23 @@
 # -*- coding: utf-8 -*-
-
-'''
-Created on Mar 5, 2010
-
-@author: epeli
-'''
-
 """
-svnadmin create testi
-svn -m "created project base" mkdir file:///$(pwd)/testi/trunk file:///$(pwd)/testi/tags
+Copyright (C) 2010 Esa-Matti Suuronen <esa-matti@suuronen.org>
 
+This file is part of subssh.
 
+Subssh is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as 
+published by the Free Software Foundation, either version 3 of 
+the License, or (at your option) any later version.
 
-epeli@debian:~/repos/svn/testi$ tail conf/authz  -n 4
-[/]
-essuuron = rw
-* = r
+Subssh is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
 
-
-epeli@debian:~/repos/svn/testi$ cat conf/svnserve.conf
-...
-[general]
-authz-db = authz
-...
-
+You should have received a copy of the GNU Affero General Public 
+License along with Subssh.  If not, see 
+<http://www.gnu.org/licenses/>.
 """
-
 
 import os
 from ConfigParser import SafeConfigParser
