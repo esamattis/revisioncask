@@ -75,7 +75,7 @@ class GitManager(RepoManager):
         
         os.chdir(path)
         
-        subssh.check_call((config.GIT_BIN, "init", "--bare"))
+        subssh.check_call((config.GIT_BIN, "--bare", "init" ))
         
         f = open("hooks/post-update", "w")
         f.write("""#!/bin/sh
