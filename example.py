@@ -21,7 +21,7 @@ License along with Subssh.  If not, see
 
 
 Simple application examples
-'''
+"""
 
 import subssh
 
