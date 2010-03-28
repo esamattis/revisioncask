@@ -28,8 +28,10 @@ import subssh
 from subssh import config
 
 
-class InvalidRepository(IOError, subssh.UserException):
+class InvalidRepository(IOError):
     pass
+
+
 
 
 class InvalidPermissions(subssh.UserException):
@@ -82,6 +84,9 @@ class VCS(object):
             for owner in f:
                 self._owners.add(owner.strip())
             f.close()
+        else:
+            raise InvalidRepository("Repository '%s' has no %s file" 
+                                    %(self.name, self.owner_filename))
 
         
         

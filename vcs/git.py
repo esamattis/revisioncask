@@ -69,7 +69,7 @@ class Git(VCS):
         
         if not self.has_permissions(username, self.permissions_required[cmd]):
             raise InvalidPermissions("%s has no permissions to run %s on %s" %
-                                     (username, cmd, self.repo_name))                                 
+                                     (username, cmd, self.name))                                 
         
         shell_cmd = cmd + " '%s'" %  self.repo_path
 
@@ -104,7 +104,6 @@ exec git-update-server-info
 
 
 
-
             
 
     
@@ -125,7 +124,7 @@ def handle_git(user, request_repo):
     # Transform virtual root
     real_repository_path = os.path.join(config.REPOSITORIES, repo_name)
     
-    repo = Git(real_repository_path, user.username)
+    repo = Git(real_repository_path, subssh.config.ADMIN)
     
     # run requested command on the repository
     return repo.execute(user.username, user.cmd, git_bin=config.GIT_BIN)

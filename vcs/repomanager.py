@@ -27,7 +27,7 @@ import subssh
 
 
 from subssh import config
-from abstractrepo import InvalidPermissions
+from abstractrepo import InvalidPermissions, InvalidRepository
 
 
 
@@ -40,7 +40,8 @@ def parse_url_configs(url_configs):
     return urls
         
         
-
+def format_list(iterable, sep=", "):
+    return sep.join(iterable).strip(sep)
 
 class RepoManager(object):
     
@@ -122,11 +123,13 @@ class RepoManager(object):
                                   request_user)
             except InvalidPermissions:
                 continue
+            except InvalidRepository:
+                continue
             else:
-                repos.append(repo.name)
+                repos.append(repo)
         
-        for name in sorted(repos):
-            subssh.writeln(name)
+        for repo in sorted(repos):
+            subssh.writeln(repo.name)
             
             
     @subssh.exposable_as()
@@ -152,7 +155,7 @@ class RepoManager(object):
         
         
         subssh.writeln()
-        subssh.writeln("Owners: %s" % ", ".join(repo.get_owners()).strip(", "))
+        subssh.writeln("Owners: %s" % format_list(repo.get_owners()))
         subssh.writeln()
         
         subssh.writeln("Permissions:")
@@ -235,7 +238,7 @@ class RepoManager(object):
         
         Overrides previous permissions if any
         """
-        
+
         f = open(os.path.join(repo_path, self.klass.owner_filename), "w")
         f.write(owner)
         f.close()        
@@ -269,6 +272,10 @@ class RepoManager(object):
         self.create_repository(repo_path, user.username)
         
         self._set_default_permissions(repo_path, user.username)
+        
+        subssh.writeln("\n\n Created new repository '%s' \n" % repo_name)
+        
+        self.info(user, repo_name)
     
 
     def create_repository(self, repo_path, username):
