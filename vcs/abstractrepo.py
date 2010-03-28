@@ -28,10 +28,11 @@ import subssh
 from subssh import config
 
 
-class InvalidRepository(IOError):
+class InvalidRepository(IOError, subssh.UserException):
     pass
 
-
+class BrokenRepository(IOError):
+    pass
 
 
 class InvalidPermissions(subssh.UserException):
@@ -69,7 +70,7 @@ class VCS(object):
         
         for path in self.required_by_valid_repo:
             if not os.path.exists(os.path.join(repo_path, path)):
-                raise InvalidRepository("'%s' does not seem to be "
+                raise BrokenRepository("'%s' does not seem to be "
                                         "valid %s repository" % 
                                     (self.name, self.__class__.__name__))
                                 
@@ -85,7 +86,7 @@ class VCS(object):
                 self._owners.add(owner.strip())
             f.close()
         else:
-            raise InvalidRepository("Repository '%s' has no %s file" 
+            raise BrokenRepository("Repository '%s' has no %s file" 
                                     %(self.name, self.owner_filename))
 
         
@@ -127,6 +128,7 @@ class VCS(object):
 
 
     def set_default_permissions(self):
+        self.remove_all_permissions()
         self.set_permissions("*", "r")
         for owner in self._owners:
             self.set_permissions(owner, "rw")        
@@ -164,7 +166,7 @@ class VCS(object):
         """Overrides previous permissions"""
         self.assert_permissions(permissions)
         if not permissions:
-            self.remove_all_permissions(username)
+            self.remove_permissions(username)
             return
         
         self.permdb.set(self._permissions_section, 
@@ -174,8 +176,12 @@ class VCS(object):
     
     
     def get_all_permissions(self):
+        """Return a list of tuples with (username, permissions)"""
         return self.permdb.items(self._permissions_section)
-    
+
+    def remove_all_permissions(self):
+        for username, permissions in self.get_all_permissions():
+            self.remove_permissions(username)
     
     def has_permissions(self, username, permissions):
         self.assert_permissions(permissions)
@@ -206,7 +212,7 @@ class VCS(object):
         return self.permdb.get(self._permissions_section, 
                                username)
     
-    def remove_all_permissions(self, username):
+    def remove_permissions(self, username):
         try:
             self.permdb.remove_option(self._permissions_section, username)
         except NoOptionError:

@@ -20,6 +20,7 @@ License along with Subssh.  If not, see
 """
 
 import os
+import shutil
 from string import Template
 
 
@@ -76,6 +77,37 @@ class RepoManager(object):
         return self.klass(self.real(repo_name), username)
     
     
+    @subssh.exposable_as()
+    def fork(self, user, repo_name, fork_name):
+        """
+        Fork a reposotory
+        
+        Make a copy of the repository for yourself.
+        
+        usage: $cmd <repo name> <fork name>
+        
+        """
+        repo = self.get_repo_object(config.ADMIN, repo_name)
+        if not repo.has_permissions(user.username, "r"):
+            raise InvalidPermissions("You need read permissions for forking")
+        
+        fork_path = os.path.join(self.path_to_repos, self.real(fork_name))
+        
+        if os.path.exists(fork_path):
+            raise InvalidRepository("Repository '%s' already exists."
+                                     % repo_name)
+        
+        shutil.copytree(repo.repo_path, fork_path)
+        
+        
+        repo = self.klass(fork_path, config.ADMIN)
+        
+        
+        self._set_default_permissions(fork_path, user.username)
+        
+        
+        
+
 
     @subssh.exposable_as()
     def web(self, user, repo_name, action=""):
@@ -263,8 +295,8 @@ class RepoManager(object):
         
         repo_path = self.real(repo_name)
         if os.path.exists(repo_path):
-            subssh.errln("Repository '%s' already exists." % repo_name)
-            return 1
+            raise InvalidRepository("Repository '%s' already exists."
+                                     % repo_name)
     
         if not os.path.exists(repo_path):
             os.makedirs(repo_path)
