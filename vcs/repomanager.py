@@ -105,8 +105,9 @@ class RepoManager(object):
         
         self._set_default_permissions(fork_path, user.username)
         
-        
-        
+        subssh.writeln("\n\n Forked repository '%s' to '%s' \n" 
+                       % (repo_name, fork_name))
+        self.info(user, fork_name)
 
 
     @subssh.exposable_as()
