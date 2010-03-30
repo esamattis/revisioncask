@@ -116,12 +116,12 @@ class VCS(object):
     def name(self):
         name = os.path.basename(self.repo_path)
             
-        if self.repo_path.endswith(self.suffix):
-            name = name[:-len(self.suffix)]
-
-        if self.repo_path.startswith(self.suffix):
+        if self.prefix and self.repo_path.startswith(self.suffix):
             name = name[len(self.suffix):]            
             
+        if self.suffix and self.repo_path.endswith(self.suffix):
+            name = name[:-len(self.suffix)]
+
             
         return name    
     
