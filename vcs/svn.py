@@ -25,7 +25,6 @@ from ConfigParser import SafeConfigParser
 import subssh
 from abstractrepo import VCS
 from repomanager import RepoManager
-from repomanager import parse_url_configs
 
 
 class config:
@@ -37,7 +36,12 @@ class config:
     
     REPOSITORIES = os.path.join( os.environ["HOME"], "repos", "svn" )
 
-    WEBVIEW = os.path.join( os.environ["HOME"], "repos", "websvn" )
+    WEB_DIR = os.path.join( os.environ["HOME"], "repos", "websvn" )
+    
+    
+    URL_RW =  "svn+ssh://$hostusername@$hostname/$name_on_fs"
+    URL_WEB_VIEW =  "http://$hostname/websvn/listing.php?repname=$name_on_fs"    
+    
     
     URLS = """Read/Write|svn+ssh://$hostname/$name_on_fs
 Webview|http://$hostname/websvn/$name_on_fs"""
@@ -116,8 +120,10 @@ def handle_svn(user, *args):
 def __appinit__():
     if subssh.to_bool(config.MANAGER_TOOLS):
         manager = SubversionManager(config.REPOSITORIES, 
-                                    urls=parse_url_configs(config.URLS),
-                                    webdir=config.WEBDIR )
+                                    web_repos_path=config.WEB_DIR,
+                                    urls={'rw': config.URL_RW,
+                                          'webview': config.URL_WEB_VIEW},                                    
+                                     )
         
         subssh.expose_instance(manager, prefix="svn-")
 

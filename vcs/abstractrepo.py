@@ -59,6 +59,10 @@ class VCS(object):
     known_permissions = "rw"
     
     
+    prefix = ""
+    suffix = ""
+    
+    
     def __init__(self, repo_path, requester):
         self.requester = requester
         self.repo_path = repo_path
@@ -107,9 +111,20 @@ class VCS(object):
         return "<%s %s>" % (self.__class__.__name__, self.name)
     
     
+    
     @property
     def name(self):
-        return os.path.basename(self.repo_path)
+        name = os.path.basename(self.repo_path)
+            
+        if self.repo_path.endswith(self.suffix):
+            name = name[:-len(self.suffix)]
+
+        if self.repo_path.startswith(self.suffix):
+            name = name[len(self.suffix):]            
+            
+            
+        return name    
+    
     
     @property
     def name_on_fs(self):
@@ -161,23 +176,46 @@ class VCS(object):
             if p not in self.known_permissions:
                 raise InvalidPermissions("Unknown permission %s" % p)
     
+    
 
     def set_permissions(self, username, permissions):
         """Overrides previous permissions"""
-        self.assert_permissions(permissions)
-        if not permissions:
-            self.remove_permissions(username)
-            return
         
-        self.permdb.set(self._permissions_section, 
-                        username, 
-                        "".join(set(permissions)))
+        try:
+            current_permissions = set(self.get_permissions(username))
+        except InvalidPermissions:
+            current_permissions = set()
+        
+        
+        if permissions.startswith("+"):
+            self.assert_permissions(permissions[1:])
+            for perm in permissions[1:]:
+                current_permissions.add(perm)
+                
+                
+        elif permissions.startswith("-"):
+            self.assert_permissions(permissions[1:])
+            for perm in permissions[1:]:
+                if perm in current_permissions:
+                    current_permissions.remove(perm)
+                    
+        else:
+            self.assert_permissions(permissions)
+            current_permissions = set(permissions)
+        
+        
+        
+        if not current_permissions:
+            self.remove_permissions(username)
+        else:
+            self.permdb.set(self._permissions_section, username, 
+                            "".join(current_permissions))
     
     
     
     def get_all_permissions(self):
         """Return a list of tuples with (username, permissions)"""
-        return self.permdb.items(self._permissions_section)
+        return sorted(self.permdb.items(self._permissions_section))
 
     def remove_all_permissions(self):
         for username, permissions in self.get_all_permissions():
@@ -209,14 +247,21 @@ class VCS(object):
         return True
         
     def get_permissions(self, username):
-        return self.permdb.get(self._permissions_section, 
-                               username)
+        try:
+            return self.permdb.get(self._permissions_section, 
+                                   username)
+        except NoOptionError:
+            raise InvalidPermissions("No such user %s" % username)
+    
+    
     
     def remove_permissions(self, username):
         try:
             self.permdb.remove_option(self._permissions_section, username)
         except NoOptionError:
-            pass
+            raise InvalidPermissions("No such user %s" % username)
+            
+
     
     def save(self):
         f = open(self.permdb_filepath, "w")

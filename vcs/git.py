@@ -28,7 +28,6 @@ import subssh
 from abstractrepo import VCS
 from abstractrepo import InvalidPermissions
 from repomanager import RepoManager
-from repomanager import parse_url_configs
 
 
 class config:
@@ -40,11 +39,18 @@ class config:
 
     MANAGER_TOOLS = "true"
     
+    
+    URL_RW =  "ssh://$hostusername@$hostname/$name_on_fs"
+    URL_HTTP_CLONE =  "http://$hostname/repo/$name_on_fs"
+    URL_WEB_VIEW =  "http://$hostname/viewgit/?a=summary&p=$name_on_fs"
+    
+    
+    
     URLS = """Read/Write|ssh://$hostname/$name_on_fs
 Read only clone|http://$hostname/repo/$name_on_fs
 Webview|http://$hostname/gitphp/$name_on_fs"""
 
-    WEBDIR = os.path.join( os.environ["HOME"], "repos", "webgit" )
+    WEB_DIR = os.path.join( os.environ["HOME"], "repos", "webgit" )
 
 
 class Git(VCS):
@@ -55,15 +61,11 @@ class Git(VCS):
 
     permissions_required = { "git-upload-pack":    "r",
                              "git-upload-archive": "r",
-                             "git-receive-pack":   "rw" }    
+                             "git-receive-pack":   "rw" }
+        
+    suffix = ".git"
     
-    
-    @property
-    def name(self):
-        name = os.path.basename(self.repo_path)    
-        if self.repo_path.endswith(".git"):
-            return name[:-4]
-        return name
+
     
     def execute(self, username, cmd, git_bin="git"):
         
@@ -78,7 +80,7 @@ class Git(VCS):
 
 class GitManager(RepoManager):
     klass = Git
-    suffix = ".git"
+    
 
     def create_repository(self, path, owner):
         
@@ -136,8 +138,11 @@ def handle_git(user, request_repo):
 def __appinit__():
     if subssh.to_bool(config.MANAGER_TOOLS):
         manager = GitManager(config.REPOSITORIES, 
-                             urls=parse_url_configs(config.URLS),
-                             webdir=config.WEBDIR )
+                             web_repos_path=config.WEB_DIR, 
+                             urls={'rw': config.URL_RW,
+                                   'anonymous_read': config.URL_HTTP_CLONE,
+                                   'webview': config.URL_WEB_VIEW},
+                             )
         
         subssh.expose_instance(manager, prefix="git-")
 

@@ -21,8 +21,6 @@ License along with Subssh.  If not, see
 
 import os
 import shutil
-from string import Template
-
 
 import subssh
 
@@ -34,47 +32,52 @@ from abstractrepo import InvalidPermissions, InvalidRepository
 
 
 
-def parse_url_configs(url_configs):
-    urls = []
-    for url_config in url_configs.split("\n"):
-        urls.append( tuple(url_config.split("|")) )
-    return urls
-        
+
         
 def format_list(iterable, sep=", "):
     return sep.join(iterable).strip(sep)
 
 class RepoManager(object):
     
-    suffix = ""
-    prefix = ""
     klass = None
     
-    def __init__(self, path_to_repos, webdir="", urls=[]):
-        self.path_to_repos = path_to_repos
+    def __init__(self, repos_path, web_repos_path=None, urls={}):
+        self.path_to_repos = repos_path
+        if web_repos_path:
+            self.web_repos_path = web_repos_path
+        else:
+            self.web_repos_path = os.path.join(self.path_to_repos, "web")
         self.urls = urls
-        self.webdir = webdir
         
-        if self.webdir and not os.path.exists(self.webdir):
-            os.makedirs(self.webdir)
+        if self.web_repos_path and not os.path.exists(self.web_repos_path):
+            os.makedirs(self.web_repos_path)
         
         
         if not os.path.exists(self.path_to_repos):
             os.makedirs(self.path_to_repos)
         
+        
 
-                
+        
+            
         
     
-    def real(self, repo_name):
+    def real_path(self, repo_name):
         """
         Return real path of the repository
         """
         return os.path.join(self.path_to_repos, 
-                            self.prefix + repo_name + self.suffix)
+                            self.klass.prefix + repo_name + self.klass.suffix)
+    
+    def real_name(self, repo_name):
+        """
+        Real name on fs
+        """
+        return os.path.basename(self.real_path(repo_name))
+    
     
     def get_repo_object(self, username, repo_name):
-        return self.klass(self.real(repo_name), username)
+        return self.klass(self.real_path(repo_name), username)
     
     
     @subssh.exposable_as()
@@ -91,7 +94,7 @@ class RepoManager(object):
         if not repo.has_permissions(user.username, "r"):
             raise InvalidPermissions("You need read permissions for forking")
         
-        fork_path = os.path.join(self.path_to_repos, self.real(fork_name))
+        fork_path = os.path.join(self.path_to_repos, self.real_path(fork_name))
         
         if os.path.exists(fork_path):
             raise InvalidRepository("Repository '%s' already exists."
@@ -110,59 +113,106 @@ class RepoManager(object):
         self.info(user, fork_name)
 
 
+
+
     @subssh.exposable_as()
-    def web(self, user, repo_name, action=""):
+    def web_enable(self, user, repo_name, ):
         """
         Enable anonymous webview.
         
-        usage: $cmd <repo name> <enable|disable>
+        usage: $cmd <repo name>
         """
         repo = self.get_repo_object(user.username, repo_name)
-        webpath = os.path.join(self.webdir, repo.name_on_fs)
+        if not repo.has_permissions('*', 'r'):
+            raise InvalidPermissions("Cannot enable web view for private "
+                                     "repository. Add read permission for "
+                                     "'*' first")
         
-        if action == "enable":
-            if not os.path.exists(webpath):
-                os.symlink(repo.repo_path, webpath)
-        elif action == "disable":
-            if os.path.exists(webpath):
-                os.remove(webpath)
-        else:
-            raise subssh.InvalidArguments("Second argument must be 'enable' "
-                                         "or 'disable'")
+        webrepopath = os.path.join(self.web_repos_path, repo.name_on_fs)
+
+        if not os.path.exists(webrepopath):
+            os.symlink(repo.repo_path, webrepopath)
+
+
     
+    @subssh.exposable_as()
+    def web_disable(self, user, repo_name, ):
+        """
+        Enable anonymous webview.
+        
+        usage: $cmd <repo name>
+        """
+        repo = self.get_repo_object(user.username, repo_name)
+        webrepopath = os.path.join(self.web_repos_path, repo.name_on_fs)
+        
+        if os.path.exists(webrepopath):
+            os.remove(webrepopath)
+
+
+    
+    
+    def is_web_enabled(self, repo):
+        webpath = os.path.join(self.web_repos_path, repo.name_on_fs)
+        return os.path.exists(webpath)
+
+        
     
     @subssh.exposable_as()
     def ls(self, user, action=""):
         """
         List repositories.
         
-        usage: $cmd [mine|all]
+        usage: $cmd [mine]
         """
         repos = []
-        
-        
-        request_user = user.username
-        try:
-            if action == 'all':
-                request_user = config.ADMIN
-        except IndexError:
-            pass
-        
         
         for repo_in_fs in os.listdir(self.path_to_repos):
             try:
                 repo = self.klass(os.path.join(self.path_to_repos, 
                                                repo_in_fs),
-                                  request_user)
-            except InvalidPermissions:
-                continue
+                                  config.ADMIN)
             except InvalidRepository:
                 continue
             else:
                 repos.append(repo)
         
+        if action == "mine":
+            repos = [repo for repo in repos if repo.is_owner(user.username)]
+        elif action:
+            raise subssh.InvalidArguments("Unknown action '%s'" % action)
+        
         for repo in sorted(repos):
             subssh.writeln(repo.name)
+                
+            
+            
+            
+            
+    
+    def viewable_urls(self, username, repo):
+        viewable_urls = {}
+        
+        for name, url_tmp in self.urls.items():
+            viewable_urls[name] = subssh.expand_subssh_vars(url_tmp, 
+                                                name_on_fs=repo.name_on_fs)        
+        
+        
+        if (not repo.has_permissions(username, 'r') 
+            and self.urls.has_key('rw')):
+            
+                del viewable_urls['rw']
+        
+        if not self.is_web_enabled(repo):
+            
+            if self.urls.has_key('anonymous_read'):
+                del viewable_urls['anonymous_read']
+                
+            if self.urls.has_key('webview'):
+                del viewable_urls['webview']
+                
+        return viewable_urls      
+        
+                    
             
             
     @subssh.exposable_as()
@@ -178,25 +228,38 @@ class RepoManager(object):
         
         
         subssh.writeln()
-        subssh.writeln("Access:")
-        for url_name, url_tmpl in self.urls:
-            url = Template(url_tmpl).substitute(name=repo.name, 
-                                                name_on_fs=repo.name_on_fs,
-                                                hostname=config.DISPLAY_HOSTNAME,
-                                                hostusername=subssh.hostusername(),)
-            subssh.writeln("    %s: %s" %(url_name, url) )
-        
-        
-        subssh.writeln()
         subssh.writeln("Owners: %s" % format_list(repo.get_owners()))
         subssh.writeln()
         
         subssh.writeln("Permissions:")
         for username, perm in repo.get_all_permissions():
-            subssh.writeln("    %s = %s" %(username, perm) )
+            subssh.writeln("%s = %s" %(username, perm), indent=4 )
         
+        subssh.writeln()
         
+        if self.is_web_enabled(repo):
+            subssh.writeln("Anonymous web view is enabled")
+        else:
+            subssh.writeln("Anonymous web view is disabled")
     
+        subssh.writeln()
+        subssh.writeln("Access:")
+        
+        urls = self.viewable_urls(user.username, repo)
+        
+        try:
+            subssh.writeln("Read/Write %s" % urls['rw'], indent=4)
+        except KeyError:
+            pass
+        try:
+            subssh.writeln("Anonymous read %s" % urls['anonymous_read'], indent=4)
+        except KeyError:
+            pass
+        try:
+            subssh.writeln("Web view %s" % urls['webview'], indent=4)
+        except KeyError:
+            pass               
+        subssh.writeln()
     
     
     @subssh.exposable_as()
@@ -250,11 +313,12 @@ class RepoManager(object):
         """
         Set read/write permissions to repository.
         
-        usage: $cmd <username> <permissions> <repo name>
+        usage: $cmd <username> <+/-permissions> <repo name>
         
-        Permissions can be 'r', 'w', or 'rw'
+        Permissions can be 'r', 'w', or 'rw'.
         
-        Eg. $cmd myfriend rw myrepository
+        Eg. $cmd myfriend r myrepository
+            $cmd myanotherfriend +w myrepository
         
         Only owners can change permissions. Owners can also add and remove
         other owners. 
@@ -262,6 +326,9 @@ class RepoManager(object):
         """
         repo = self.get_repo_object(user.username, repo_name)
         repo.set_permissions(username, permissions)
+        if not repo.has_permissions('*', 'r') and self.is_web_enabled(repo):
+            self.web_disable(user, repo_name)
+            subssh.errln("Note: Web view disabled")
         repo.save()
         
         
@@ -294,7 +361,7 @@ class RepoManager(object):
                         % subssh.safe_chars)
             return 1                
         
-        repo_path = self.real(repo_name)
+        repo_path = self.real_path(repo_name)
         if os.path.exists(repo_path):
             raise InvalidRepository("Repository '%s' already exists."
                                      % repo_name)
