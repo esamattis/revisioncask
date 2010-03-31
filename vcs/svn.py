@@ -36,8 +36,7 @@ class config:
     
     REPOSITORIES = os.path.join( os.environ["HOME"], "repos", "svn" )
 
-    WEBDIR = os.path.join( os.environ["HOME"], "repos", "websvn" )
-    
+    WEB_DIR = os.path.join( os.environ["HOME"], "repos", "websvn" )
     
     URL_RW =  "svn+ssh://$hostusername@$hostname/$name_on_fs"
     URL_WEB_VIEW =  "http://$hostname/websvn/listing.php?repname=$name_on_fs"    
