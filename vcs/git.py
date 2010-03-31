@@ -35,7 +35,6 @@ class config:
     
     REPOSITORIES = os.path.join( os.environ["HOME"], "repos", "git" )
     
-    WEBVIEW = os.path.join( os.environ["HOME"], "repos", "webgit" )
 
     MANAGER_TOOLS = "true"
     
@@ -44,12 +43,6 @@ class config:
     URL_HTTP_CLONE =  "http://$hostname/repo/$name_on_fs"
     URL_WEB_VIEW =  "http://$hostname/viewgit/?a=summary&p=$name_on_fs"
     
-    
-    
-    URLS = """Read/Write|ssh://$hostname/$name_on_fs
-Read only clone|http://$hostname/repo/$name_on_fs
-Webview|http://$hostname/gitphp/$name_on_fs"""
-
     WEB_DIR = os.path.join( os.environ["HOME"], "repos", "webgit" )
 
 

@@ -178,10 +178,16 @@ class RepoManager(object):
         
         if action == "mine":
             repos = [repo for repo in repos if repo.is_owner(user.username)]
+        elif not action:
+            repos = [repo for repo in repos if repo.is_owner(user.username) 
+                     and repo.has_permissions(user.username, 'r')]
         elif action:
             raise subssh.InvalidArguments("Unknown action '%s'" % action)
         
-        for repo in sorted(repos):
+        
+        
+        
+        for repo in sorted(repos, lambda a, b: cmp(a.name, b.name)):
             subssh.writeln(repo.name)
                 
             

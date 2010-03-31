@@ -19,7 +19,6 @@ License along with Subssh.  If not, see
 <http://www.gnu.org/licenses/>.
 """
 
-
 import os
 import shutil
 from ConfigParser import SafeConfigParser, NoOptionError

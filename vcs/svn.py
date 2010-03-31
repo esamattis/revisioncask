@@ -36,17 +36,14 @@ class config:
     
     REPOSITORIES = os.path.join( os.environ["HOME"], "repos", "svn" )
 
-    WEB_DIR = os.path.join( os.environ["HOME"], "repos", "websvn" )
+    WEBDIR = os.path.join( os.environ["HOME"], "repos", "websvn" )
     
     
     URL_RW =  "svn+ssh://$hostusername@$hostname/$name_on_fs"
     URL_WEB_VIEW =  "http://$hostname/websvn/listing.php?repname=$name_on_fs"    
     
     
-    URLS = """Read/Write|svn+ssh://$hostname/$name_on_fs
-Webview|http://$hostname/websvn/$name_on_fs"""
 
-    WEBDIR = os.path.join( os.environ["HOME"], "repos", "websvn" )
 
     MANAGER_TOOLS = "true"
 
