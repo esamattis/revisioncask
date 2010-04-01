@@ -70,10 +70,27 @@ class Git(VCS):
 
         return subssh.call((git_bin, "shell", "-c", shell_cmd))
 
+    def set_description(self, description):
+        f = open(os.path.join(self.repo_path, "description"), 'w')
+        f.write(description)
+        f.close()
+
 
 class GitManager(RepoManager):
     klass = Git
     
+
+    @subssh.exposable_as()
+    def set_description(self, user, repo_name, *description):
+        """
+        Set description for web interface.
+
+        usage: $cmd <repo name> <description>
+
+        """
+        repo = self.get_repo_object(user.username, repo_name)
+        repo.set_description(" ".join(description))
+        
 
     def create_repository(self, path, owner):
         
