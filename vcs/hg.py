@@ -144,8 +144,7 @@ def hg_serve(user, options, args):
 def hg_init(user, options, args):
     return hg_manager.init(user, args[1])
     
-def permissions_hook(url=None, source=None, ui=None, 
-                     hooktype=None, repo=None):
+def permissions_hook(ui=None, repo=None, **kwargs):
     
     user = subssh.get_user() 
     
