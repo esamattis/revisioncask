@@ -69,7 +69,10 @@ class MercurialManager(RepoManager):
         if not hgrc.has_section("hooks"):
             hgrc.add_section("hooks")
         
-        hgrc.set("hooks", "pretxnchangegroup.subssh.permissions", 
+        
+        # http://hgbook.red-bean.com/read/handling-repository-events-with-hooks.html#sec:hook:prechangegroup
+        # http://hgbook.red-bean.com/read/handling-repository-events-with-hooks.html#sec:hook:pretxnchangegroup
+        hgrc.set("hooks", "prechangegroup.subssh.permissions", 
                  "python:subssh.app.vcs.hg.permissions_hook")
         
         f = open(hgrc_filepath, "w")
@@ -141,19 +144,19 @@ def hg_serve(user, options, args):
 def hg_init(user, options, args):
     return hg_manager.init(user, args[1])
     
-def permissions_hook(ui, repo_hg, **kwargs):
+def permissions_hook(url=None, source=None, ui=None, 
+                     hooktype=None, repo=None):
     
-#    ui.write(str(sys.argv))
-    user = subssh.get_user_object() 
+    user = subssh.get_user() 
     
-    upper = "/".join(repo_hg.path.split("/")[:-1])
+    upper = "/".join(repo.path.split("/")[:-1])
     
-    repo = Mercurial(upper, subssh.config.ADMIN)
+    repo_subssh = Mercurial(upper, subssh.config.ADMIN)
     
-    if not repo.has_permissions(user.username, "w"):
+    if not repo_subssh.has_permissions(user.username, "w"):
         from mercurial.util import Abort
         raise Abort('%s has no write permissions to %s' %
-                          (user.username, repo.name ))
+                          (user.username, repo_subssh.name ))
 
 
 
