@@ -81,17 +81,14 @@ class VCS(object):
         self.permdb_filepath = os.path.join(repo_path, self.permdb_name)
         self.owner_filepath = os.path.join(repo_path, self.owner_filename)
         
-        self._owners = set()
+        self.permdb = SafeConfigParser()
+        self.permdb.read(self.permdb_filepath)
         
-        if os.path.exists(self.owner_filepath):
-            f = open(self.owner_filepath, "r")
-            for owner in f:
-                self._owners.add(owner.strip())
-            f.close()
-        else:
-            raise BrokenRepository("Repository '%s' has no %s file" 
-                                    %(self.name, self.owner_filename))
-
+        if not self.permdb.has_section(self._permissions_section):
+            self.permdb.add_section(self._permissions_section)
+    
+        self._owners = set()
+        self._read_owners()
         
         
         if self.requester != config.ADMIN \
@@ -100,17 +97,19 @@ class VCS(object):
                                      (self.requester, self))
 
         
-        self.permdb = SafeConfigParser()
-        self.permdb.read(self.permdb_filepath)
-        
-        if not self.permdb.has_section(self._permissions_section):
-            self.permdb.add_section(self._permissions_section)
-    
     def __repr__(self):
         return "<%s %s>" % (self.__class__.__name__, self.name)
     
     
     
+    def _read_owners(self):
+        if os.path.exists(self.owner_filepath):
+            f = open(self.owner_filepath, "r")
+            for owner in f:
+                self._owners.add(owner.strip())
+            f.close()
+
+
     @property
     def name(self):
         name = os.path.basename(self.repo_path)
@@ -141,11 +140,16 @@ class VCS(object):
         return username in self._owners
 
 
-    def set_default_permissions(self):
+    def set_default_permissions(self, owner=None):
+        if not owner:
+            owner = self.requester
+        
+        
         self.remove_all_permissions()
         self.set_permissions("*", "r")
-        for owner in self._owners:
-            self.set_permissions(owner, "rw")        
+        
+        self._owners = set([owner])
+        self.set_permissions(owner, "rw")        
         
     def delete(self):
         """
@@ -262,13 +266,18 @@ class VCS(object):
             
 
     
-    def save(self):
-        f = open(self.permdb_filepath, "w")
-        self.permdb.write(f)
-        f.close()
-        
+    def write_owners(self):
         f = open(self.owner_filepath, "w")
         for owner in self._owners:
             f.write(owner + "\n")
         f.close()        
+        
+    def write_permissions(self):
+        f = open(self.permdb_filepath, "w")
+        self.permdb.write(f)
+        f.close()
+    
+    def save(self):
+        self.write_owners()
+        self.write_permissions()
         

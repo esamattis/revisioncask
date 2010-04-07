@@ -345,12 +345,9 @@ class RepoManager(object):
         Overrides previous permissions if any
         """
 
-        f = open(os.path.join(repo_path, self.klass.owner_filename), "w")
-        f.write(owner)
-        f.close()        
         
-        repo = self.klass(repo_path, owner)
-        repo.set_default_permissions()
+        repo = self.klass(repo_path, subssh.config.ADMIN)
+        repo.set_default_permissions(owner)
         repo.save()        
         
         
@@ -386,4 +383,6 @@ class RepoManager(object):
 
     def create_repository(self, repo_path, username):
         raise NotImplementedError
+    
+
     

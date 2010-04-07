@@ -10,7 +10,7 @@ Created on Apr 6, 2010
 import os
 import sys
 import re
-from ConfigParser import SafeConfigParser, NoOptionError
+from ConfigParser import SafeConfigParser
 from optparse import OptionParser
 
 import subssh
@@ -43,17 +43,54 @@ class Mercurial(VCS):
     required_by_valid_repo  = (".hg",)
 
 
-    permdb_name= ".hg/" + VCS.permdb_name
-    owner_filename= ".hg/" + VCS.owner_filename
 
+    _permissions_section = "subssh.permissions"
 
+    owner_filename=".hg/hgrc"
 
-
+    permdb_name=owner_filename
     
+    owner_sep = ", "
+    
+    
+    def _read_owners(self):
+        if self.permdb.has_section("web"):
+            owners_str = self.permdb.get("web", "contact")
+            for owner in owners_str.split(self.owner_sep):
+                self._owners.add(owner)
+        else:
+            self.permdb.add_section("web")
+            
+    
+    
+    def write_owners(self):
+        sorted_owners = sorted(self._owners)
+        owners_str = self.owner_sep.join(sorted_owners).strip(self.owner_sep)
+        self.permdb.set("web", "contact", owners_str )
+    
+    
+
+
+    def set_description(self, description):
+        self.permdb.set("web", "description", description)
+            
+
 
 class MercurialManager(RepoManager):
     klass = Mercurial
     
+    
+    @subssh.exposable_as()
+    def set_description(self, user, repo_name, *description):
+        """
+        Set description for web interface.
+
+        usage: $cmd <repo name> <description>
+
+        """
+        repo = self.get_repo_object(user.username, repo_name)
+        repo.set_description(" ".join(description))
+        repo.save()
 
 
     def create_repository(self, path, owner):
@@ -80,8 +117,8 @@ class MercurialManager(RepoManager):
         f.close()
 
 
-            
-            
+
+
             
             
             

@@ -79,7 +79,6 @@ class Git(VCS):
 class GitManager(RepoManager):
     klass = Git
     
-
     @subssh.exposable_as()
     def set_description(self, user, repo_name, *description):
         """
@@ -89,9 +88,9 @@ class GitManager(RepoManager):
 
         """
         repo = self.get_repo_object(user.username, repo_name)
-        repo.set_description(" ".join(description))
+        repo.set_description(" ".join(description))    
+        repo.save()
         
-
     def create_repository(self, path, owner):
         
         os.chdir(path)
