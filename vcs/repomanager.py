@@ -177,10 +177,11 @@ class RepoManager(object):
                 repos.append(repo)
         
         if action == "mine":
-            repos = [repo for repo in repos if repo.is_owner(user.username)]
+            repos = [repo for repo in repos 
+                     if repo.is_owner(user.username)]
         elif not action:
-            repos = [repo for repo in repos if repo.is_owner(user.username) 
-                     and repo.has_permissions(user.username, 'r')]
+            repos = [repo for repo in repos 
+                     if repo.has_permissions(user.username, 'r')]
         elif action:
             raise subssh.InvalidArguments("Unknown action '%s'" % action)
         
