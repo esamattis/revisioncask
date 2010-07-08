@@ -144,7 +144,7 @@ def handle_git(user, request_repo):
 
 
 
-def __appinit__():
+def __appinit():
     if subssh.to_bool(config.MANAGER_TOOLS):
         manager = GitManager(config.REPOSITORIES, 
                              web_repos_path=config.WEB_DIR, 

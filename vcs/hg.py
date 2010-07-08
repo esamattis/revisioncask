@@ -197,7 +197,7 @@ def permissions_hook(ui=None, repo=None, **kwargs):
 
 
 
-def __appinit__():
+def __appinit():
     if subssh.to_bool(config.MANAGER_TOOLS):
         global hg_manager
         hg_manager = MercurialManager(config.REPOSITORIES, 
