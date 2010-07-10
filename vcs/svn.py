@@ -113,7 +113,7 @@ def handle_svn(user, *args):
 
 
 
-def __appinit():
+def appinit():
     if subssh.to_bool(config.MANAGER_TOOLS):
         manager = SubversionManager(config.REPOSITORIES, 
                                     web_repos_path=config.WEB_DIR,
