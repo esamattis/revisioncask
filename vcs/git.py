@@ -33,7 +33,8 @@ from repomanager import RepoManager
 class config:
     GIT_BIN = "git"
     
-    REPOSITORIES = os.path.join( os.environ["HOME"], "repos", "git" )
+    REPOSITORIES = os.path.join( os.environ["HOME"], 
+                                 ".subssh", "repos", "git" )
     
 
     MANAGER_TOOLS = "true"

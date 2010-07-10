@@ -34,7 +34,8 @@ class config:
     
     SVNADMIN_BIN = "svnadmin"
     
-    REPOSITORIES = os.path.join( os.environ["HOME"], "repos", "svn" )
+    REPOSITORIES = os.path.join( os.environ["HOME"], 
+                                 ".subssh", "repos", "svn" )    
 
     WEB_DIR = os.path.join( os.environ["HOME"], "repos", "websvn" )
     

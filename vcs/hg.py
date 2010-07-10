@@ -22,8 +22,9 @@ from repomanager import RepoManager
 
 class config:
     HG_BIN = "hg"
-    
-    REPOSITORIES = os.path.join( os.environ["HOME"], "repos", "hg" )
+
+    REPOSITORIES = os.path.join( os.environ["HOME"], 
+                                 ".subssh", "repos", "hg" )
     
 
     MANAGER_TOOLS = "true"
