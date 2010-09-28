@@ -153,7 +153,7 @@ class VCS(object):
         
     def delete(self):
         """
-        Deletes hole repository
+        Deletes whole repository
         Cannot be undone!
         """
         shutil.rmtree(self.repo_path)
