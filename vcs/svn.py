@@ -103,13 +103,14 @@ class SubversionManager(RepoManager):
 @subssh.no_interactive
 @subssh.expose_as("svnserve")
 def handle_svn(user, *args):
+
     # Subversion can handle itself permissions and virtual root.
     # So there's no need to manually check permissions here or
     # transform the virtual root.
     return subssh.call((config.SVNSERVE_BIN,
                             '--tunnel-user=' + user.username,
                             '-t', '-r',
-                            config.REPOSITORIES))
+                            repos_path_with_svn_prefix))
 
 
 
