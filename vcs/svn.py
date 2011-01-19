@@ -24,6 +24,7 @@ from ConfigParser import SafeConfigParser
 
 import subssh
 from abstractrepo import VCS
+from abstractrepo import vcs_init
 from repomanager import RepoManager
 
 
@@ -34,8 +35,8 @@ class config:
 
     SVNADMIN_BIN = "svnadmin"
 
-    REPOSITORIES = os.path.join( os.environ["HOME"],
-                                 ".subssh", "repos", "svn" )
+    REPOSITORIES = os.path.join(subssh.config.SUBSSH_HOME, "vcs", "svn", "repos")
+    HOOKS_DIR = os.path.join(subssh.config.SUBSSH_HOME, "vcs", "svn", "hooks")
 
     WEB_DIR = os.path.join( os.environ["HOME"], "repos", "websvn" )
 
@@ -94,6 +95,8 @@ class SubversionManager(RepoManager):
 
 
 
+    def activate_hooks(self, user, repo_name):
+        """TODO"""
 
 
 
@@ -115,6 +118,9 @@ def handle_svn(user, *args):
 
 
 def appinit():
+
+    vcs_init(config)
+
     if subssh.to_bool(config.MANAGER_TOOLS):
         manager = SubversionManager(config.REPOSITORIES,
                                     web_repos_path=config.WEB_DIR,

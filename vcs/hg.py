@@ -17,14 +17,15 @@ import subssh
 
 from abstractrepo import VCS
 from abstractrepo import InvalidPermissions
+from abstractrepo import vcs_init
 from repomanager import RepoManager
 
 
 class config:
     HG_BIN = "hg"
 
-    REPOSITORIES = os.path.join( os.environ["HOME"],
-                                 ".subssh", "repos", "hg" )
+    REPOSITORIES = os.path.join(subssh.config.SUBSSH_HOME, "vcs", "hg", "repos")
+    HOOKS_DIR = os.path.join(subssh.config.SUBSSH_HOME, "vcs", "hg", "hooks")
 
 
     MANAGER_TOOLS = "true"
@@ -117,6 +118,9 @@ class MercurialManager(RepoManager):
         hgrc.write(f)
         f.close()
 
+    def activate_hooks(self, user, repo_name):
+        """TODO"""
+
 
 
 
@@ -200,6 +204,9 @@ def permissions_hook(ui=None, repo=None, **kwargs):
 
 
 def appinit():
+
+    vcs_init(config)
+
     if subssh.to_bool(config.MANAGER_TOOLS):
         global hg_manager
         hg_manager = MercurialManager(config.REPOSITORIES,

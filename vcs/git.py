@@ -27,18 +27,17 @@ import subssh
 
 from abstractrepo import VCS
 from abstractrepo import InvalidPermissions
+from abstractrepo import vcs_init
 from repomanager import RepoManager
 
 
 class config:
     GIT_BIN = "git"
 
-    REPOSITORIES = os.path.join( os.environ["HOME"],
-                                 ".subssh", "repos", "git" )
-
+    REPOSITORIES = os.path.join(subssh.config.SUBSSH_HOME, "vcs", "git", "repos")
+    HOOKS_DIR = os.path.join(subssh.config.SUBSSH_HOME, "vcs", "git", "hooks")
 
     MANAGER_TOOLS = "true"
-
 
     URL_RW =  "ssh://$hostusername@$hostname/git/$name_on_fs"
     URL_HTTP_CLONE =  "http://$hostname/repo/$name_on_fs"
@@ -74,6 +73,7 @@ class Git(VCS):
         f.close()
 
 
+
 class GitManager(RepoManager):
     klass = Git
 
@@ -95,23 +95,15 @@ class GitManager(RepoManager):
 
         subssh.check_call((config.GIT_BIN, "--bare", "init" ))
 
-        f = open("hooks/post-update", "w")
-        f.write("""#!/bin/sh
-#
-# Prepare a packed repository for use over
-# dumb transports.
-#
-
-exec git-update-server-info
-
-""")
-        f.close()
-
-        os.chmod("hooks/post-update", 0700)
 
 
-
-
+    def activate_hooks(self, user, repo_name):
+        """Symlinks global git hooks to given git repository"""
+        repo_path = self.real_path(repo_name)
+        for hook in self.hooks:
+            os.chmod(hook, 0700)
+            os.symlink(hook, os.path.join(repo_path, "hooks",
+                                          os.path.basename(hook)))
 
 
 
@@ -140,16 +132,44 @@ def handle_git(user, request_repo):
 
 
 
+def install_default_global_hooks(hooks_dir):
+    hook = os.path.join(config.HOOKS_DIR, "post-update")
+
+    if os.path.exists(hook):
+        return
+
+    f = open(hook, "w")
+    f.write("""#!/bin/sh
+#
+# Prepare a packed repository for use over
+# dumb transports.
+#
+
+exec git-update-server-info
+
+""")
+    f.close()
+
+    os.chmod(hook, 0700)
 
 
 def appinit():
+
+    vcs_init(config)
+    install_default_global_hooks(config.HOOKS_DIR)
+
+
     if subssh.to_bool(config.MANAGER_TOOLS):
+
+        hooks = [os.path.join(config.HOOKS_DIR, hook)
+                    for hook in os.listdir(config.HOOKS_DIR)]
+
         manager = GitManager(config.REPOSITORIES,
                              web_repos_path=config.WEB_DIR,
                              urls={'rw': config.URL_RW,
                                    'anonymous_read': config.URL_HTTP_CLONE,
                                    'webview': config.URL_WEB_VIEW},
-                             )
+                             hooks=hooks)
 
         subssh.expose_instance(manager, prefix="git-")
 

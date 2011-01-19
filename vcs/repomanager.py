@@ -25,6 +25,7 @@ import shutil
 import subssh
 
 
+from subssh.dirtools import create_required_directories_or_die
 from subssh import config
 from abstractrepo import InvalidPermissions, InvalidRepository
 
@@ -41,13 +42,18 @@ class RepoManager(object):
 
     klass = None
 
-    def __init__(self, repos_path, web_repos_path=None, urls={}):
+    def __init__(self, repos_path, web_repos_path=None,
+                 urls={}, hooks=tuple()):
+
         self.path_to_repos = repos_path
+        self.urls = urls
+        self.hooks = hooks
+
         if web_repos_path:
             self.web_repos_path = web_repos_path
         else:
             self.web_repos_path = os.path.join(self.path_to_repos, "web")
-        self.urls = urls
+
 
         if self.web_repos_path and not os.path.exists(self.web_repos_path):
             os.makedirs(self.web_repos_path)
@@ -374,6 +380,7 @@ class RepoManager(object):
             os.makedirs(repo_path)
 
         self.create_repository(repo_path, user.username)
+        self.activate_hooks(user, repo_path)
 
         self._set_default_permissions(repo_path, user.username)
 
@@ -383,6 +390,9 @@ class RepoManager(object):
 
 
     def create_repository(self, repo_path, username):
+        raise NotImplementedError
+
+    def activate_hooks(self, user, repo_name):
         raise NotImplementedError
 
 

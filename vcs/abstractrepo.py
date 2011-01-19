@@ -25,6 +25,7 @@ from ConfigParser import SafeConfigParser, NoOptionError
 
 import subssh
 from subssh import config
+from subssh.dirtools import create_required_directories_or_die
 
 
 class InvalidRepository(IOError, subssh.UserException):
@@ -37,6 +38,9 @@ class BrokenRepository(IOError):
 class InvalidPermissions(subssh.UserException):
     pass
 
+
+def vcs_init(config):
+    create_required_directories_or_die((config.REPOSITORIES, config.HOOKS_DIR))
 
 
 
