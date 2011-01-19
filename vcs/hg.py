@@ -31,7 +31,7 @@ class config:
     MANAGER_TOOLS = "true"
 
 
-    URL_RW =  "ssh://$hostusername@$hostname/$name_on_fs"
+    URL_RW =  "ssh://$hostusername@$hostname/hg/$name_on_fs"
     URL_HTTP_CLONE =  "http://$hostname/repo/$name_on_fs"
     URL_WEB_VIEW =  "http://$hostname/viewgit/?a=summary&p=$name_on_fs"
 
@@ -137,7 +137,6 @@ parser.add_option("--stdio", action="store_true", dest='stdio' )
 
 
 
-valid_repo = re.compile(r"^[%s]+$" % subssh.safe_chars)
 
 @subssh.no_interactive
 @subssh.expose_as("hg")
@@ -156,6 +155,7 @@ def hg_handle(user, *args):
 
 
 
+valid_repo = re.compile(r"^/?hg/[%s]+$" % subssh.safe_chars)
 def hg_serve(user, options, args):
     if not options.repository:
         raise subssh.InvalidArguments("Repository is missing")
@@ -167,7 +167,8 @@ def hg_serve(user, options, args):
         subssh.errln("Illegal repository path '%s'" % options.repository)
         return 1
 
-    repo_name = options.repository.lstrip("/")
+    repo_name = os.path.basename(options.repository.lstrip("/"))
+
 
     # Transform virtual root
     real_repository_path = os.path.join(config.REPOSITORIES, repo_name)
