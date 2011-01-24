@@ -1,2 +1,0 @@
-subssh
-subssh.app

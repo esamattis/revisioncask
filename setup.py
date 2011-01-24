@@ -3,7 +3,7 @@ import os
 
 version = '1.0'
 
-setup(name='subssh.app.vcs',
+setup(name='revisioncask',
       version=version,
       description="Version control management made simple",
       long_description=open("README.txt").read() + "\n" +
@@ -16,10 +16,9 @@ setup(name='subssh.app.vcs',
       keywords='',
       author='',
       author_email='',
-      url='http://svn.plone.org/svn/collective/',
+      url='https://github.com/epeli/revisioncask',
       license='GPL',
       packages=find_packages(exclude=['ez_setup']),
-      namespace_packages=['subssh', 'subssh.app'],
       include_package_data=True,
       zip_safe=False,
       install_requires=[
