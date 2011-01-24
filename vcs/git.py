@@ -102,8 +102,10 @@ class GitManager(RepoManager):
         repo_path = self.real_path(repo_name)
         for hook in self.hooks:
             os.chmod(hook, 0700)
-            os.symlink(hook, os.path.join(repo_path, "hooks",
-                                          os.path.basename(hook)))
+            hook_name = os.path.join(repo_path, "hooks",
+                                     os.path.basename(hook))
+            if not os.path.exists(hook_name):
+                os.symlink(hook, hook_name)
 
 
 
