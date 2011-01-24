@@ -24,6 +24,7 @@ setup(name='subssh.app.vcs',
       zip_safe=False,
       install_requires=[
           'setuptools',
+          'subssh',
           # -*- Extra requirements: -*-
       ],
       entry_points="""
