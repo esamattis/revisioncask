@@ -99,8 +99,13 @@ class MercurialManager(RepoManager):
         from mercurial import ui, hg
         hg_repo = hg.repository(ui.ui(), path, create=True)
 
+
+    def activate_hooks(self, user, repo_name):
+
+        repo_path = self.real_path(repo_name)
+
         hgrc = SafeConfigParser()
-        hgrc_filepath = os.path.join(hg_repo.path, "hgrc")
+        hgrc_filepath = os.path.join(repo_path, ".hg", "hgrc")
 
         hgrc.read(hgrc_filepath)
 
@@ -111,15 +116,12 @@ class MercurialManager(RepoManager):
 
         # http://hgbook.red-bean.com/read/handling-repository-events-with-hooks.html#sec:hook:prechangegroup
         # http://hgbook.red-bean.com/read/handling-repository-events-with-hooks.html#sec:hook:pretxnchangegroup
-        hgrc.set("hooks", "prechangegroup.subssh.permissions",
-                 "python:subssh.app.vcs.hg.permissions_hook")
+        hgrc.set("hooks", "prechangegroup.revisioncask.permissions",
+                 "python:revisioncask.hg.permissions_hook")
 
         f = open(hgrc_filepath, "w")
         hgrc.write(f)
         f.close()
-
-    def activate_hooks(self, user, repo_name):
-        """TODO"""
 
 
 
