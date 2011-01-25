@@ -24,7 +24,6 @@ import shutil
 from ConfigParser import SafeConfigParser, NoOptionError
 
 import subssh
-from subssh import config
 from subssh.dirtools import create_required_directories_or_die
 
 
@@ -49,7 +48,6 @@ class VCS(object):
     Abstract class for creating VCS support
     """
 
-
     # Add some files/directories here which are required by the vcs
     required_by_valid_repo = None
 
@@ -60,6 +58,12 @@ class VCS(object):
     owner_filename="subssh_owners"
 
     known_permissions = "rw"
+
+    default_permissions = (
+        ('*', 'r'), # everyone can read
+    )
+
+    admin_name = "admin"
 
 
     prefix = ""
@@ -95,7 +99,7 @@ class VCS(object):
         self._read_owners()
 
 
-        if self.requester != config.ADMIN \
+        if self.requester != self.admin_name \
            and not self.is_owner(self.requester):
             raise InvalidPermissions("%s has no permissions to %s" %
                                      (self.requester, self))
@@ -148,9 +152,10 @@ class VCS(object):
         if not owner:
             owner = self.requester
 
-
         self.remove_all_permissions()
-        self.set_permissions("*", "r")
+
+        for user, perm in self.default_permissions:
+            self.set_permissions(user, perm)
 
         self._owners = set([owner])
         self.set_permissions(owner, "rw")
