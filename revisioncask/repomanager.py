@@ -43,11 +43,12 @@ class RepoManager(object):
     klass = None
 
     def __init__(self, repos_path, web_repos_path=None,
-                 urls={}, hooks=tuple()):
+                 urls={}, default_permissions=tuple()):
+
+        self.default_permissions = default_permissions
 
         self.path_to_repos = repos_path
         self.urls = urls
-        self.hooks = hooks
 
         if web_repos_path:
             self.web_repos_path = web_repos_path
@@ -63,9 +64,13 @@ class RepoManager(object):
             os.makedirs(self.path_to_repos)
 
 
+    def create_repository(self, path, owner):
+        repo = self.klass(path, owner, create=True)
 
+        for username, permission in self.default_permissions:
+            repo.set_permissions(username, permission)
 
-
+        repo.save()
 
 
     def real_path(self, repo_name):
@@ -83,6 +88,8 @@ class RepoManager(object):
 
 
     def get_repo_object(self, username, repo_name):
+        if isinstance(repo_name, self.klass):
+            return repo_name
         return self.klass(self.real_path(repo_name), username)
 
 
@@ -110,9 +117,6 @@ class RepoManager(object):
 
 
         repo = self.klass(fork_path, config.ADMIN)
-
-
-        self._set_default_permissions(fork_path, user.username)
 
         subssh.writeln("\n\n Forked repository '%s' to '%s' \n"
                        % (repo_name, fork_name))
@@ -345,18 +349,6 @@ class RepoManager(object):
         repo.save()
 
 
-    def _set_default_permissions(self, repo_path, owner):
-        """
-        Set default permission to a repository.
-
-        Overrides previous permissions if any
-        """
-
-
-        repo = self.klass(repo_path, subssh.config.ADMIN)
-        repo.set_default_permissions(owner)
-        repo.save()
-
 
     @subssh.exposable_as()
     def init(self, user, repo_name):
@@ -372,28 +364,20 @@ class RepoManager(object):
             return 1
 
         repo_path = self.real_path(repo_name)
-        if os.path.exists(repo_path):
-            raise InvalidRepository("Repository '%s' already exists."
-                                     % repo_name)
-
-        if not os.path.exists(repo_path):
-            os.makedirs(repo_path)
-
         self.create_repository(repo_path, user.username)
-        self.activate_hooks(user, repo_path)
-
-        self._set_default_permissions(repo_path, user.username)
+        self.copy_common_hooks(user, repo_name)
 
         subssh.writeln("\n\n Created new repository '%s' \n" % repo_name)
 
         self.info(user, repo_name)
 
 
-    def create_repository(self, repo_path, username):
-        raise NotImplementedError
+    def copy_common_hooks(self, user, repo_name):
+        """
+        (re)Copies shared hooks to the repository
+        """
+        raise NotImplementedError("copy_common_hooks not implemented")
 
-    def activate_hooks(self, user, repo_name):
-        raise NotImplementedError
 
 
 

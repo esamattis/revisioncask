@@ -72,7 +72,32 @@ class Git(VCS):
         f.write(description)
         f.close()
 
+    def set_hooks(self, hooks):
+        """
+        Hooks should be an iterable of tuples. First element is the hook name
+        and  second element is a filesystem path to the hook.
+        """
 
+        # TODO: We should copy probably copy the hook so that this would work
+        # consistently with hg.
+
+        # TODO: Mechanism for adding multiple same hooks
+
+        # TODO: Second element in the tuple could also be file like object
+
+        repo_path = self.repo_path
+
+        for hook_name, hook in hooks:
+            os.chmod(hook, 0700)
+            hook_name = os.path.join(repo_path, "hooks",
+                                     hook_name)
+            if not os.path.exists(hook_name):
+                os.symlink(hook, hook_name)
+
+
+    def _create_repository_files(self):
+        os.chdir(self.repo_path)
+        subssh.check_call((config.GIT_BIN, "--bare", "init" ))
 
 class GitManager(RepoManager):
     klass = Git
@@ -89,23 +114,9 @@ class GitManager(RepoManager):
         repo.set_description(" ".join(description))
         repo.save()
 
-    def create_repository(self, path, owner):
 
-        os.chdir(path)
-
-        subssh.check_call((config.GIT_BIN, "--bare", "init" ))
-
-
-
-    def activate_hooks(self, user, repo_name):
-        """Symlinks global git hooks to given git repository"""
-        repo_path = self.real_path(repo_name)
-        for hook in self.hooks:
-            os.chmod(hook, 0700)
-            hook_name = os.path.join(repo_path, "hooks",
-                                     os.path.basename(hook))
-            if not os.path.exists(hook_name):
-                os.symlink(hook, hook_name)
+    def copy_common_hooks(self, user, repo_name):
+        print "TODO: implement this"
 
 
 
@@ -157,21 +168,14 @@ exec git-update-server-info
 
 def appinit():
 
-    vcs_init(config)
-    install_default_global_hooks(config.HOOKS_DIR)
-
 
     if subssh.to_bool(config.MANAGER_TOOLS):
-
-        hooks = [os.path.join(config.HOOKS_DIR, hook)
-                    for hook in os.listdir(config.HOOKS_DIR)]
 
         manager = GitManager(config.REPOSITORIES,
                              web_repos_path=config.WEB_DIR,
                              urls={'rw': config.URL_RW,
                                    'anonymous_read': config.URL_HTTP_CLONE,
-                                   'webview': config.URL_WEB_VIEW},
-                             hooks=hooks)
+                                   'webview': config.URL_WEB_VIEW}, )
 
         subssh.expose_instance(manager, prefix="git-")
 

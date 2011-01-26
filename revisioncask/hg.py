@@ -46,7 +46,7 @@ class Mercurial(VCS):
 
 
 
-    _permissions_section = "subssh.permissions"
+    _permissions_section = "revisioncask.permissions"
 
     owner_filename=".hg/hgrc"
 
@@ -72,10 +72,52 @@ class Mercurial(VCS):
 
 
 
-
     def set_description(self, description):
         self.permdb.set("web", "description", description)
 
+
+    def _create_repository_files(self):
+        from mercurial import ui, hg
+        hg_repo = hg.repository(ui.ui(), path, create=True)
+
+        # Setup the permission hook.
+        # TODO: This should be in the default global hook file.
+        # This permission restraint could be done without hooks like in Git
+        self.set_hooks((("prechangegroup.revisioncask.permissions",
+                         "python:revisioncask.hg.permissions_hook"),))
+        # http://hgbook.red-bean.com/read/handling-repository-events-with-hooks.html#sec:hook:prechangegroup
+        # http://hgbook.red-bean.com/read/handling-repository-events-with-hooks.html#sec:hook:pretxnchangegroup
+
+
+    def set_hooks(self, hooks):
+        """
+        Set hooks for mercurial repository.
+
+        Hooks should be an iterable of tuples. First element is the hook name
+        and second is the hook setting. See the HG documentation for more
+        information
+
+        """
+        #Hooks are managed in hgrc file in .hg directory.
+        #The file standard ini-file so we can add new hooks to the
+        #hooks section with Python SafeConfigParser
+
+        # TODO: Lock the file for reading&writing
+
+        hgrc = SafeConfigParser()
+        hgrc_filepath = os.path.join(self.repo_path, ".hg", "hgrc")
+
+        hgrc.read(hgrc_filepath)
+
+        if not hgrc.has_section("hooks"):
+            hgrc.add_section("hooks")
+
+        for hook_name, hook in hooks:
+            hgrc.set("hooks", hook_name, hook)
+
+        f = open(hgrc_filepath, "w")
+        hgrc.write(f)
+        f.close()
 
 
 class MercurialManager(RepoManager):
@@ -90,45 +132,15 @@ class MercurialManager(RepoManager):
         usage: $cmd <repo name> <description>
 
         """
+        # This just wraps the repo method to a subssh command
+
         repo = self.get_repo_object(user.username, repo_name)
         repo.set_description(" ".join(description))
         repo.save()
 
 
-    def create_repository(self, path, owner):
-        from mercurial import ui, hg
-        hg_repo = hg.repository(ui.ui(), path, create=True)
-
-
-    def activate_hooks(self, user, repo_name):
-
-        repo_path = self.real_path(repo_name)
-
-        hgrc = SafeConfigParser()
-        hgrc_filepath = os.path.join(repo_path, ".hg", "hgrc")
-
-        hgrc.read(hgrc_filepath)
-
-
-        if not hgrc.has_section("hooks"):
-            hgrc.add_section("hooks")
-
-
-        # http://hgbook.red-bean.com/read/handling-repository-events-with-hooks.html#sec:hook:prechangegroup
-        # http://hgbook.red-bean.com/read/handling-repository-events-with-hooks.html#sec:hook:pretxnchangegroup
-        hgrc.set("hooks", "prechangegroup.revisioncask.permissions",
-                 "python:revisioncask.hg.permissions_hook")
-
-        f = open(hgrc_filepath, "w")
-        hgrc.write(f)
-        f.close()
-
-
-
-
-
-
-
+    def copy_common_hooks(self, user, repo_name):
+        print "TODO: implement this"
 
 
 parser = OptionParser()
@@ -136,7 +148,6 @@ parser = OptionParser()
 
 parser.add_option('-R', '--repository', dest='repository')
 parser.add_option("--stdio", action="store_true", dest='stdio' )
-
 
 
 
@@ -191,6 +202,8 @@ def hg_init(user, options, args):
 
 def permissions_hook(ui=None, repo=None, **kwargs):
 
+    # Get user from subssh global. Bad? I should eliminate this, but how to
+    # tell the hook which user is asking for permission to the repository?
     user = subssh.get_user()
 
     # TODO: upper = os.path.dirname(repo.path) ?

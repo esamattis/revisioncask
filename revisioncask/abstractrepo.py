@@ -59,9 +59,6 @@ class VCS(object):
 
     known_permissions = "rw"
 
-    default_permissions = (
-        ('*', 'r'), # everyone can read
-    )
 
     admin_name = "admin"
 
@@ -70,24 +67,66 @@ class VCS(object):
     suffix = ""
 
 
-    def __init__(self, repo_path, requester):
+    def __init__(self, repo_path, requester, create=False):
         self.requester = requester
         self.repo_path = repo_path
 
 
-        if not os.path.exists(self.repo_path):
+        if not os.path.exists(self.repo_path) and not create:
             raise InvalidRepository("Repository '%s' does not exists!"
                                     %  self.name )
+        else:
+            self._init_repository_location()
+            self._create_repository_files()
+            self._load_permissions()
+
+            # When creating new repository the requester is always the owner
+            # and he/she will have all permissions to it
+            self.set_permissions(self.requester, self.known_permissions)
+            self.save()
 
         for path in self.required_by_valid_repo:
             if not os.path.exists(os.path.join(repo_path, path)):
                 raise BrokenRepository("'%s' does not seem to be "
                                         "valid %s repository" %
                                     (self.name, self.__class__.__name__))
+        self._load_permissions()
 
 
-        self.permdb_filepath = os.path.join(repo_path, self.permdb_name)
-        self.owner_filepath = os.path.join(repo_path, self.owner_filename)
+        if self.requester != self.admin_name \
+           and not self.is_owner(self.requester):
+            raise InvalidPermissions("%s has no permissions to %s" %
+                                     (self.requester, self))
+
+
+
+    def _create_repository_files(self):
+        raise NotImplementedError
+
+    def set_hooks(self, hooks):
+        raise NotImplementedError
+
+
+    def _init_repository_location(self):
+        """
+        Run before _create_repository
+
+        Setups path to be initable for new repository.  Creates directories if
+        they do not exist.  Raises InvalidRepository if the leaf is not empty.
+        """
+        if not os.path.exists(self.repo_path):
+            os.makedirs(self.repo_path)
+
+        elif len(os.listdir(self.repo_path)) != 0:
+            raise InvalidRepository("Cannot create new repository. "
+                          "The target %s is not empty" % self.repo_path)
+
+
+
+    def _load_permissions(self):
+
+        self.permdb_filepath = os.path.join(self.repo_path, self.permdb_name)
+        self.owner_filepath = os.path.join(self.repo_path, self.owner_filename)
 
         self.permdb = SafeConfigParser()
         self.permdb.read(self.permdb_filepath)
@@ -98,11 +137,6 @@ class VCS(object):
         self._owners = set()
         self._read_owners()
 
-
-        if self.requester != self.admin_name \
-           and not self.is_owner(self.requester):
-            raise InvalidPermissions("%s has no permissions to %s" %
-                                     (self.requester, self))
 
 
     def __repr__(self):
@@ -148,23 +182,13 @@ class VCS(object):
         return username in self._owners
 
 
-    def set_default_permissions(self, owner=None):
-        if not owner:
-            owner = self.requester
-
-        self.remove_all_permissions()
-
-        for user, perm in self.default_permissions:
-            self.set_permissions(user, perm)
-
-        self._owners = set([owner])
-        self.set_permissions(owner, "rw")
 
     def delete(self):
         """
         Deletes whole repository
         Cannot be undone!
         """
+        # TODO: Should this in the repository manager?
         shutil.rmtree(self.repo_path)
 
 
@@ -199,24 +223,28 @@ class VCS(object):
             current_permissions = set()
 
 
+        # Adding permissions
         if permissions.startswith("+"):
             self.assert_permissions(permissions[1:])
             for perm in permissions[1:]:
                 current_permissions.add(perm)
 
 
+        # Removing permissions
         elif permissions.startswith("-"):
             self.assert_permissions(permissions[1:])
             for perm in permissions[1:]:
                 if perm in current_permissions:
                     current_permissions.remove(perm)
 
+        # Set permissions, overrides previous one
         else:
             self.assert_permissions(permissions)
             current_permissions = set(permissions)
 
 
 
+        # Remove user name from the permissions file if user has no permissions
         if not current_permissions:
             self.remove_permissions(username)
         else:
