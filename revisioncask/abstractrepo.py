@@ -71,40 +71,59 @@ class VCS(object):
         self.requester = requester
         self.repo_path = repo_path
 
-
-        if not os.path.exists(self.repo_path) and not create:
-            raise InvalidRepository("Repository '%s' does not exists!"
-                                    %  self.name )
+        if create:
+            self._init_new()
         else:
-            self._init_repository_location()
-            self._create_repository_files()
-            self._load_permissions()
+            self._init_existing()
 
-            # When creating new repository the requester is always the owner
-            # and he/she will have all permissions to it
-            self.set_permissions(self.requester, self.known_permissions)
-            self.save()
+
+    def _init_new(self):
+        """
+        Creates new repository to the path.
+        Creates necessary directories.
+        Sets initial permissions.
+        """
+        self._init_repository_location()
+        self._create_repository_files()
+        self._load_permissions()
+        # When creating new repository the requester is always the owner
+        self.add_owner(self.requester)
+        self.save()
+
+    def _init_existing(self):
+        """
+        1. Checks that given path is really a repository.
+        2. Loads permissions
+        3. Checks the permissions
+        """
+        self._assert_valid_repository()
+        self._load_permissions()
+        self._assert_can_manage()
+
+    def _assert_valid_repository(self):
+        """
+        Lets do some assertions that this really is repository directory that
+        we are expecting 
+        """
+        if not os.path.exists(self.repo_path):
+            raise InvalidRepository("Repository '%s' does not exists!" % 
+                                    self.name )
 
         for path in self.required_by_valid_repo:
-            if not os.path.exists(os.path.join(repo_path, path)):
+            if not os.path.exists(os.path.join(self.repo_path, path)):
                 raise BrokenRepository("'%s' does not seem to be "
                                         "valid %s repository" %
                                     (self.name, self.__class__.__name__))
-        self._load_permissions()
 
-
+    def _assert_can_manage(self):
         if self.requester != self.admin_name \
            and not self.is_owner(self.requester):
             raise InvalidPermissions("%s has no permissions to %s" %
                                      (self.requester, self))
 
-
-
     def _create_repository_files(self):
         raise NotImplementedError
 
-    def set_hooks(self, hooks):
-        raise NotImplementedError
 
 
     def _init_repository_location(self):
@@ -173,7 +192,8 @@ class VCS(object):
 
     def add_owner(self, username):
         self._owners.add(username)
-        self.set_permissions(username, "rw")
+        # Owner will have all permissions to the repository
+        self.set_permissions(username, self.known_permissions)
 
     def get_owners(self):
         return sorted(list(self._owners))
@@ -317,4 +337,7 @@ class VCS(object):
     def save(self):
         self.write_owners()
         self.write_permissions()
+
+    def set_hooks(self, hooks):
+        raise NotImplementedError
 
