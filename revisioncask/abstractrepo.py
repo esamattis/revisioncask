@@ -70,6 +70,7 @@ class VCS(object):
     def __init__(self, repo_path, requester, create=False):
         self.requester = requester
         self.repo_path = repo_path
+        self._owners = set()
 
         if create:
             self._init_new()
@@ -153,7 +154,6 @@ class VCS(object):
         if not self.permdb.has_section(self._permissions_section):
             self.permdb.add_section(self._permissions_section)
 
-        self._owners = set()
         self._read_owners()
 
 
@@ -277,9 +277,20 @@ class VCS(object):
         """Return a list of tuples with (username, permissions)"""
         return sorted(self.permdb.items(self._permissions_section))
 
+    # TODO: make private
     def remove_all_permissions(self):
         for username, permissions in self.get_all_permissions():
             self.remove_permissions(username)
+
+    def reset_permissions_to(self, username):
+        """
+        Makes username the only owner and permission owner
+        """
+        self.remove_all_permissions()
+        self._owners = set()
+        self.add_owner(username)
+
+
 
     def has_permissions(self, username, permissions):
         self.assert_permissions(permissions)
