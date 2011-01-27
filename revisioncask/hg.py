@@ -78,7 +78,7 @@ class Mercurial(VCS):
 
     def _create_repository_files(self):
         from mercurial import ui, hg
-        hg_repo = hg.repository(ui.ui(), path, create=True)
+        hg_repo = hg.repository(ui.ui(), self.repo_path, create=True)
 
         # Setup the permission hook.
         # TODO: This should be in the default global hook file.
