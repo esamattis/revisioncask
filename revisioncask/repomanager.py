@@ -117,6 +117,10 @@ class RepoManager(object):
 
 
         repo = self.klass(fork_path, config.ADMIN)
+        repo.reset_permissions_to(user.username)
+        for username, permission in self.default_permissions:
+            repo.set_permissions(username, permission)
+        repo.save()
 
         subssh.writeln("\n\n Forked repository '%s' to '%s' \n"
                        % (repo_name, fork_name))
