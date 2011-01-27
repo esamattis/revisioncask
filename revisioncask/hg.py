@@ -140,7 +140,8 @@ class MercurialManager(RepoManager):
 
 
     def copy_common_hooks(self, user, repo_name):
-        print "TODO: implement this"
+        ""
+        # TODO: implement
 
 
 parser = OptionParser()
