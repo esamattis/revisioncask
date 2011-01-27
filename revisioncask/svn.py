@@ -54,26 +54,9 @@ class Subversion(VCS):
     # For svnserve, "/" stands for whole repository
     _permissions_section = "/"
 
+    def _create_repository_files(self):
 
-
-class SubversionManager(RepoManager):
-
-    klass = Subversion
-
-    def _enable_svn_perm(self, path, dbfile="authz"):
-        """
-        Set Subversion repository to use our permission config file
-        """
-        confpath = os.path.join(path, "conf/svnserve.conf")
-        conf = SafeConfigParser()
-        conf.read(confpath)
-        conf.set("general", "authz-db", dbfile)
-        f = open(confpath, "w")
-        conf.write(f)
-        f.close()
-
-
-    def create_repository(self, path, owner):
+        path = self.repo_path
 
         if not os.path.exists(path):
             os.makedirs(path)
@@ -81,22 +64,43 @@ class SubversionManager(RepoManager):
 
         subssh.check_call((config.SVNADMIN_BIN, "create", path))
         subssh.check_call((
-                          config.SVN_BIN, "-m", "created automatically project base",
+                          config.SVN_BIN, "-m", "automatically created project base",
                           "mkdir", "file://%s" % os.path.join(path, "trunk"),
                                    "file://%s" % os.path.join(path, "tags"),
                                    "file://%s" % os.path.join(path, "branches"),
                           ))
 
 
-        self._enable_svn_perm(path, os.path.basename(Subversion.permdb_name))
 
-        return 0
+    def _enable_svn_perm(self):
+        """
+        Set Subversion repository to use our permission config file
+        """
+        confpath = os.path.join(self.repo_path, "conf/svnserve.conf")
+        conf = SafeConfigParser()
+        conf.read(confpath)
+        conf.set("general", "authz-db", self.permdb_name)
+        f = open(confpath, "w")
+        conf.write(f)
+        f.close()
+
+
+class SubversionManager(RepoManager):
+
+    klass = Subversion
+
+
+
 
 
 
 
     def activate_hooks(self, user, repo_name):
         """TODO"""
+
+    def copy_common_hooks(self, user, repo_name):
+        ""
+        # TODO: implement
 
 
 
