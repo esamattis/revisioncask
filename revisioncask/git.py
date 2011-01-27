@@ -99,6 +99,10 @@ class Git(VCS):
         os.chdir(self.repo_path)
         subssh.check_call((config.GIT_BIN, "--bare", "init" ))
 
+    def copy_common_hooks(self, user, repo_name):
+        ""
+        # TODO: implement
+
 class GitManager(RepoManager):
     klass = Git
 
