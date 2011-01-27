@@ -6,8 +6,8 @@ version = '1.0'
 setup(name='revisioncask',
       version=version,
       description="Version control management made simple",
-      long_description=open("README.txt").read() + "\n" +
-                       open(os.path.join("docs", "HISTORY.txt")).read(),
+      long_description=open("README.markdown").read() + "\n" +
+                       open(os.path.join("docs", "HISTORY.markdown")).read(),
       # Get more strings from
       # http://pypi.python.org/pypi?:action=list_classifiers
       classifiers=[
